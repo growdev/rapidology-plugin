@@ -108,8 +108,8 @@ class Rapidology_GitHub_Updater {
 		// set timeout
 		add_filter( 'http_request_timeout', array( $this, 'http_request_timeout' ) );
 
-			// set sslverify for zip download
-			add_filter('http_request_args', array($this, 'http_request_sslverify'), 10, 2);
+		// set sslverify for zip download
+		add_filter('http_request_args', array($this, 'http_request_sslverify'), 10, 2);
 
 
 	}
@@ -362,7 +362,13 @@ BOD;
 
 	public function get_changelog(){
 		$this->getRepoReleaseInfo();
-		return '';
+		if(strpos($this->config['githubAPIResult']->message, 'API rate limit exceeded') >= 0){
+			return '';
+		}
+		$_changelog = class_exists( "Parsedown" )
+			? Parsedown::instance()->parse( $this->config['githubAPIResult']->body )
+			: $this->config['githubAPIResult']->body;
+		return $_changelog;
 
 	}
 
@@ -390,7 +396,7 @@ BOD;
 
 		// Check if the transient contains the 'checked' information
 		// If not, just return its value without hacking it
-	
+
 		// check the version and decide if it's new
 		$update = version_compare( $this->config['new_version'], $this->config['version'] );
 		$this->config['old_version'] = $this->config['version'];
@@ -420,7 +426,7 @@ BOD;
 	 * @return object $response the plugin info
 	 */
 	public function get_plugin_info( $false, $action, $response ) {
-		
+
 
 		$response->slug = $this->config['slug'];
 		$response->plugin_name  = $this->config['plugin_name'];
@@ -449,7 +455,7 @@ BOD;
 	 * @return array $result the result of the move
 	 */
 	public function upgrader_post_install( $true, $hook_extra, $result ) {
-		
+
 		global $wp_filesystem;
 
 		// Move & Activate
@@ -485,7 +491,7 @@ BOD;
 
 		WP_Filesystem();
 		if (unzip_file($file, WP_CONTENT_DIR."/upgrade")) {
-		// Now that the zip file has been used, destroy it
+			// Now that the zip file has been used, destroy it
 			unlink($file);
 			return true;
 		} else {
